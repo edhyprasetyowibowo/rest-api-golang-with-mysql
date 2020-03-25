@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"errors"
+	"database/sql"
 	"github.com/repo/rest_api/config"
 	"github.com/repo/rest_api/models"
 )
@@ -14,7 +16,7 @@ const (
 	layoutDateTime = "2006-01-02 15:04:05"
 )
 
-
+//GetAll
 func GetAll(ctx context.Context) ([]models.Users, error) {
 
 	var Users []models.Users
@@ -64,4 +66,85 @@ func GetAll(ctx context.Context) ([]models.Users, error) {
 	}
 
 	return Users, nil
+}
+
+// Insert
+func Insert(ctx context.Context, user models.Users) error {
+
+	db, err := config.MySQL()
+
+	if err != nil {
+		log.Fatal("Can't connect to MySQL", err)
+	}
+
+	queryText := fmt.Sprintf("INSERT INTO %v (name, address, phone, created_at, updated_at) values('%v','%v','%v','%v','%v')", table,
+		user.Name,
+		user.Address,
+		user.Phone,
+		time.Now().Format(layoutDateTime),
+		time.Now().Format(layoutDateTime))
+
+	_, err = db.ExecContext(ctx, queryText)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Update
+func Update(ctx context.Context, user models.Users) error {
+ 
+    db, err := config.MySQL()
+ 
+    if err != nil {
+        log.Fatal("Can't connect to MySQL", err)
+    }
+ 
+    queryText := fmt.Sprintf("UPDATE %v set name ='%s', address = '%s', phone = '%s', updated_at = '%v' where id = '%d'",
+        table,
+        user.Name,
+		user.Address,
+		user.Phone,
+        time.Now().Format(layoutDateTime),
+        user.ID,
+    )
+    fmt.Println(queryText)
+ 
+    _, err = db.ExecContext(ctx, queryText)
+ 
+    if err != nil {
+        return err
+    }
+ 
+    return nil
+}
+
+
+
+// Delete
+func Delete(ctx context.Context, user models.Users) error {
+ 
+    db, err := config.MySQL()
+ 
+    if err != nil {
+        log.Fatal("Can't connect to MySQL", err)
+    }
+ 
+    queryText := fmt.Sprintf("DELETE FROM %v where id = '%d'", table, user.ID)
+ 
+    s, err := db.ExecContext(ctx, queryText)
+ 
+    if err != nil && err != sql.ErrNoRows {
+        return err
+    }
+ 
+    check, err := s.RowsAffected()
+    fmt.Println(check)
+    if check == 0 {
+        return errors.New("id tidak ada")
+    }
+ 
+    return nil
 }
